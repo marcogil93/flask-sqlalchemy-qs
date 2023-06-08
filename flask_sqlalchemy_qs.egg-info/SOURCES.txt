@@ -1,3 +1,4 @@
+LICENSE
 README.md
 setup.py
 flask_sqlalchemy_qs/__init__.py

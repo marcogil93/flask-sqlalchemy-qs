@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: flask-sqlalchemy-qs
-Version: 1.2
+Version: 1.0.0
 Summary: Generate and manipulatew SQLAlchemy filters and sorts from query strings in the URL
 Home-page: https://github.com/marcogil93
 Author: Marco Gil
@@ -13,12 +13,18 @@ Classifier: Framework :: Flask
 Requires-Python: >=3.7
 Description-Content-Type: text/markdown
 Provides-Extra: dev
+License-File: LICENSE
 
 # flask-sqlalchemy-qs
 
 flask-sqlalchemy-qs is a Python library that enables processing of query strings and its usage in conjunction with Flask and SQLAlchemy. The library provides tools for generating and manipulating SQLAlchemy filters and sorts from query strings in the URL, making it easier to build robust and flexible RESTful APIs. 
 
+A User model has a username column attribute to filter:
+
 `/users?filters[username][eq]=awesomeuser@example.com`
+
+
+A User model has a person relationship attribute, and a list of users has to be filtered and sorted by an attribute of that relationship:
 
 `/users?filters[person][age][gte]=22&sorts[0][person][age]=DESC&limit=10&offset=0`
 
@@ -36,6 +42,7 @@ To get the filters, sorts, limit, and offset from the query string is necesarry 
 
 
 ### For the "filters" parameter
+Filter your list result by column and relationship model properties.
 
 `GET /api/endpoint?filters[field][operator]=value`
 
@@ -67,79 +74,72 @@ The following operators are available:
 | and         | Joins the filters in an "and" expression |
 | not         | Joins the filters in an "not" expression |
 
-Examples:
+#### Examples:
 
+1) Simple usage
 
-```
-#Simple usage
-/users?filters[username][eq]=username@example.com
-```
+`/users?filters[username][eq]=username@example.com`  
 
-```
-#Relationship usage (User has a person)
-/users?filters[person][name][eq]=Marco
-```
+2) Relationship usage (User has a person)
 
-```
-#Complex usage
-/users?filters[username][contains]=awesome.com&filters[person][age][gte]=25
-```
+`/users?filters[person][name][eq]=Marco`
 
-```
-# in and nin usage
-/users?filters[person][age][in][0]=20&filters[person][age][in][1]=25&filters[person][age][in][2]=30
-```
+3) Multiple usage
 
-```
-# boolean usage
-/users?filters[person][age][in][0]=20&filters[person][age][in][1]=25&filters[person][age][in][2]=30
-```
+`/users?filters[username][contains]=awesome.com&filters[person][age][gte]=25`
 
-```
-# boolean usage
-/users?filters[or][0][username][eq]=username1&filters[or][1][username][eq]=username2
-```
+4) In and nin usage
 
-```
-# Complex boolean usage
-/users?filters[or][0][username][contains]=awesome.com&filters[or][1][not][0][and][0][person][age][gte]=20&filters[or][1][not][0][and][1][person][age][lte]=30
-```
+`/users?filters[person][age][in][0]=20&filters[person][age][in][1]=25&filters[person][age][in][2]=30`
+
+5) Boolean usage
+
+`/users?filters[or][0][username][eq]=username1&filters[or][1][username][eq]=username2`
+
+6) Complex boolean usage
+
+`/users?filters[or][0][username][contains]=awesome.com&filters[or][1][not][0][and][0][person][age][gte]=20&filters[or][1][not][0][and][1][person][age][lte]=30`
+
+<!-- blank line -->  
+
+<!-- blank line -->  
+
 
 ### For the "sorts" parameter
+Sort your list result by column and relationship model properties.
 
 `GET /api/endpoint?sorts[priority_index][field]=order`
 
-```
-# Sort usage
-/users?sorts[0][person][age]=DESC&sorts[1][username]=ASC
-```
+#### Examples:
+
+1) Single sort usage
+
+`/users?sorts[0][username]=DESC`
+
+2) Multiple order priority and relationship usage
+
+`/users?sorts[0][username]=DESC&sorts[1][person][age]=ASC`
 
 ### For the "limit" and "offset" parameter 
+Limt (amount of elements) and offset (amount of skipped elements) for your list result. 
 
 `GET /api/endpoint?limit=10&offset=2`
 
-First, import the function get_url_query_ctx
+#### Examples:
 
-`from flas_sqlalchemy_qs import get_url_query_ctx`
+`/users?limit=100&offset=5`
 
-This function can be used to process query strings from the current URL in Flask:
 
-`ctx = get_url_query_ctx()`
+## Implementation 
+In order to use it in the sqlalchemy query object. The BaseQuery needs to be imported and set as the query_class in the model
 
-ctx is a dictionary that contains processed filters, sorts, limits, and offsets from the query string.
+```python
+from typing import Dict, List, Tuple, Union
+from flask_sqlalchemy_qs import get_url_query_ctx, BaseQuery
 
-type filters: dict()
+...
 
-type offset: integer
-
-type limit: integer
-
-type sorts: list(dict())
-
-In order to use it in the sqlalchemy query object. The BaseQuery needs to be imported and set as the query_class
-
-```
-from flas_sqlalchemy_qs import BaseQuery
+db = SQLAlchemy(app)
 
 # In this case, a Base Model is defined with its query_class attribute set to BaseQuery
 class Base(db.Model):
@@ -149,23 +149,47 @@ class Base(db.Model):
 class User(Base):
   id       = db.Column(db.Integer, primary_key=True)
   ...
+
+...
+
+#Types
+FilterType = Dict[str, Union[bool, str, Dict]]
+SortType = Dict[str, Union[str, Dict]]
+
+...
+
+@myblueprint.route('/users', methods=['GET'])
+def get_all_users():
+  #Get the query string in the correct format
+  ctx: Dict[str, Union[FilterType, List[SortType], int]] = get_url_query_ctx()
+
+  filters:FilterType   = ctx["filters"]
+  sorts:List[SortType] = ctx["sorts"]
+  limit:int            = ctx["limit"]
+  offset:int           = ctx["offset"]
+
+
+  #Query the model with the extended methods
+  query = User.query.filter_by_ctx(filters=filters) \
+                    .sort_by_ctx(sorts=sorts) \
+                    .offset(offset) \
+                    .limit(limit)
+  
+  ...
+
+  results = query.all()
+
+  ...
 ```
 
-Then, you can query your models as follows:
+## Version
+1.0.0
 
-```
-ctx = get_url_query_ctx()
-query = User.query.filter_by_ctx(filters=ctx["filters]) \
-                  .sort_by_ctx(sorts=ctx["sorts"]) \
-                  .offset(ctx["offset"]) \
-                  .limit("limit")
-
-results = query.all()
-
-```
 ## Requirements 
 SQLALCHEMYSQLAlchemy~=2.0
+
 flask~=2.2
+
 flask-sqlalchemy~=3.0
 
 ## Contribution

@@ -10,7 +10,7 @@ setup(
     packages=["flask_sqlalchemy_qs"],
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/marcogil93",
+    url="https://github.com/marcogil93/flask-sqlalchemy-qs",
     author="Marco Gil",
     author_email="marcogil93@gmail.com",
     license="MIT",
