@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="flask_sqlalchemy_qs",
-    version="1.0.1",
+    version="1.0.2",
     description="Generate and manipulatew SQLAlchemy filters and sorts from query strings in the URL",
     packages=["flask_sqlalchemy_qs"],
     long_description=long_description,
