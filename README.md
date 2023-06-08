@@ -2,13 +2,14 @@
 
 flask-sqlalchemy-qs is a Python library that enables processing of query strings and its usage in conjunction with Flask and SQLAlchemy. The library provides tools for generating and manipulating SQLAlchemy filters and sorts from query strings in the URL, making it easier to build robust and flexible RESTful APIs. 
 
+A User model has a username column attribute to filter:
+
 `/users?filters[username][eq]=awesomeuser@example.com`
 
-where model User has a username column attribute
+
+A User model has a person relationship attribute, and a list of users has to be filtered and sorted by an attribute of that relationship:
 
 `/users?filters[person][age][gte]=22&sorts[0][person][age]=DESC&limit=10&offset=0`
-
-where model User has a person relationship attribute
 
 ## Installation
 
@@ -98,12 +99,12 @@ Sort your list result by column and relationship model properties.
 
 `/users?sorts[0][username]=DESC`
 
-2) Multiple and relationship sort usage
+2) Multiple order priority and relationship usage
 
 `/users?sorts[0][username]=DESC&sorts[1][person][age]=ASC`
 
 ### For the "limit" and "offset" parameter 
-Limt (amount of elements) and set an offset (skip elements) for your list result. 
+Limt (amount of elements) and offset (amount of skipped elements) for your list result. 
 
 `GET /api/endpoint?limit=10&offset=2`
 
