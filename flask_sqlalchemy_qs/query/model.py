@@ -1,12 +1,18 @@
 from sqlalchemy import asc, desc, or_, and_, not_
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, Mapper
+from typing import Dict, List, Tuple, Union
 
 # BaseQuery class to extend Query class and make use
 # of filtering, sorting features
 
+#Types
+FilterType = Dict[str, Union[bool, str, Dict]]
+SortType = Dict[str, Union[str, Dict]]
+BooleanExpression = Union[or_, and_, not_]
+
 class BaseQuery(Query):
   # Helper function to handle filters
-  def filter_helper(self, filters, mapper, sqlalchemy_condition, query):
+  def filter_helper(self, filters:FilterType, mapper:Mapper, sqlalchemy_condition:BooleanExpression, query:Query) -> Query:
     conditions = []
     column_names = [column.key for column in mapper.columns]
     relation_names = [relationship.key for relationship in mapper.relationships]
@@ -122,7 +128,7 @@ class BaseQuery(Query):
     return (sqlalchemy_condition(*conditions), query)
     
   # Function to generate filters based on the context
-  def filter_by_ctx(self, filters):
+  def filter_by_ctx(self, filters: FilterType) -> Query:
     mapper = self._entity_from_pre_ent_zero()
     (conditions, query) = self.filter_helper([filters], mapper, and_, self)
 
@@ -130,7 +136,7 @@ class BaseQuery(Query):
     return query.filter(conditions)
   
   # Helper function to handle sorting
-  def sort_hepler(self, sort, mapper, query):
+  def sort_hepler(self, sort:SortType, mapper:Mapper, query:Query) -> Query:
     column_names = [column.key for column in mapper.columns]
     relation_names = [relationship.key for relationship in mapper.relationships]
 
@@ -163,7 +169,7 @@ class BaseQuery(Query):
     return query
 
   # Function to generate sorting based on the context
-  def sort_by_ctx(self, sorts):
+  def sort_by_ctx(self, sorts:List[SortType]) ->Query:
     mapper = self._entity_from_pre_ent_zero()
     query = self
 

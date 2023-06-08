@@ -1,5 +1,3 @@
-import json
-
 def test_users_integration(client, setup_entities):
   response = client.get("/users?" +
     "filters[username][eq]=alex_username@example.com")

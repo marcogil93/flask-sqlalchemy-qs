@@ -1,6 +1,11 @@
+from typing import Dict, List, Tuple, Union
 from flask import request
 
-def parse_filters(items):
+#Types
+FilterType = Dict[str, Union[bool, str, Dict]]
+SortType = Dict[str, Union[str, Dict]]
+
+def parse_filters(items: List[Tuple[str, str]]) -> FilterType:
   filters = {}
   
   for key, value in items:
@@ -65,7 +70,7 @@ def parse_filters(items):
 
   return filters
   
-def parse_sort(items):
+def parse_sort(items: List[Tuple[str, str]]) -> List[SortType]:
   sorts = []
   
   for key, value in items:
@@ -104,11 +109,11 @@ def parse_sort(items):
 
   return sorts
   
-def get_url_query_ctx():
+def get_url_query_ctx() -> Dict[str, Union[FilterType, int, List[SortType]]]:
   filters = parse_filters(request.args.items(multi=True))
-  offset = request.args.get("offset", default=0, type=int)
-  limit = request.args.get("limit", default=10, type=int)
-  sorts = parse_sort(request.args.items(multi=True))
+  offset  = request.args.get("offset", default=0, type=int)
+  limit   = request.args.get("limit", default=10, type=int)
+  sorts   = parse_sort(request.args.items(multi=True))
 
   ctx = {
     "filters": filters,

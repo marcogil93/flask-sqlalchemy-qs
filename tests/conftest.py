@@ -13,7 +13,8 @@ def client():
       def qs_parser():
         ctx = get_url_query_ctx()
         return jsonify({"ctx":ctx})
-      
+    
+    if 'users' not in app.view_functions:
       @app.route('/users', methods=['GET'])
       def get_users():
         ctx = get_url_query_ctx()
