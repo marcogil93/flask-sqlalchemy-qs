@@ -120,6 +120,10 @@ In order to use it in the sqlalchemy query object. The BaseQuery needs to be imp
 from typing import Dict, List, Tuple, Union
 from flask_sqlalchemy_qs import get_url_query_ctx, BaseQuery
 
+...
+
+db = SQLAlchemy(app)
+
 # In this case, a Base Model is defined with its query_class attribute set to BaseQuery
 class Base(db.Model):
   __abstract__ = True
@@ -129,20 +133,23 @@ class User(Base):
   id       = db.Column(db.Integer, primary_key=True)
   ...
 
+...
+
 #Types
 FilterType = Dict[str, Union[bool, str, Dict]]
 SortType = Dict[str, Union[str, Dict]]
 
+...
 
 @myblueprint.route('/users', methods=['GET'])
 def get_all_users():
-  ctx = get_url_query_ctx()
   #Get the query string in the correct format
   ctx: Dict[str, Union[FilterType, List[SortType], int]] = get_url_query_ctx()
-  filters:FilterType = ctx["filters"]
+
+  filters:FilterType   = ctx["filters"]
   sorts:List[SortType] = ctx["sorts"]
-  limit:int = ctx["limit"]
-  offset:int = ctx["offset"]
+  limit:int            = ctx["limit"]
+  offset:int           = ctx["offset"]
 
 
   #Query the model with the extended methods

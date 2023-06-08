@@ -128,7 +128,7 @@ class BaseQuery(Query):
     return (sqlalchemy_condition(*conditions), query)
     
   # Function to generate filters based on the context
-  def filter_by_ctx(self, filters: FilterType) -> Query:
+  def filter_by_ctx(self, filters:FilterType) -> Query:
     mapper = self._entity_from_pre_ent_zero()
     (conditions, query) = self.filter_helper([filters], mapper, and_, self)
 
