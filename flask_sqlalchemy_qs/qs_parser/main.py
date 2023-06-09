@@ -1,125 +1,179 @@
+from sqlalchemy import asc, desc, or_, and_, not_
+from sqlalchemy.orm import Query, Mapper
 from typing import Dict, List, Tuple, Union
-from flask import request
 
-#Types
+# BaseQuery class to extend Query class and make use
+# of filtering, sorting features
+
+# Types
 FilterType = Dict[str, Union[bool, str, Dict]]
 SortType = Dict[str, Union[str, Dict]]
+BooleanExpression = Union[or_, and_, not_]
 
-def parse_filters(items: List[Tuple[str, str]]) -> FilterType:
-  filters = {}
-  
-  for key, value in items:
-    if key.startswith("filters"):
-      parts = key.split("[")
-      target_dict = filters
-      ##Remove first index: filters
-      parts.pop(0)
+class BaseQuery(Query):
+    # Helper function to handle filters
+    def filter_helper(self, filters: FilterType, mapper: Mapper, sqlalchemy_condition: BooleanExpression, query: Query) -> Query:
+        conditions = []
+        column_names = [column.key for column in mapper.columns]
+        relation_names = [relationship.key for relationship in mapper.relationships]
 
-      for i, part in enumerate(parts):
-        #remove ] char
-        part = part[:-1]
+        for filter in filters:
+            for key, value in filter.items():
+                # If the key refers to a column property
+                if key in column_names:
+                    idx = column_names.index(key)
+                    column = mapper.columns[idx]
 
-        #is final condition (eq, contains, ...)   index in
-        if i == len(parts) -1:
-          if value == 'true':
-            target_dict[part] = True
-          elif value == 'false':
-            target_dict[part] = False
-          else:
-            if part.isdigit(): #Case in, nin
-              target_dict[int(part)] = value
-            else:
-              target_dict[part] = value
-        
-        elif part in ["in", "nin"]:
-          if part not in target_dict:
-            target_dict[part] = []
+                    # Set all the property filters
+                    for condition, filter_value in value.items():
+                        # Supported conditions
+                        if condition in {
+                            "eq",          # Equal
+                            "ne",          # Not equal
+                            "lt",          # Less than
+                            "lte",         # Less than or equal to
+                            "gt",          # Greater than
+                            "gte",         # Greater than or equal to
+                            "in",          # Included in an array
+                            "nin",         # Not included in an array
+                            "contains",    # Contains
+                            "ncontains",   # Does not contain
+                            "icontains",   # Contains (case-insensitive)
+                            "like",
+                            "ilike",
+                            "not_like",
+                            "not_ilike",
+                            "nicontains",  # Does not contain (case-insensitive)
+                            "startswith",  # Starts with
+                            "istartswith",  # Starts with (case-insensitive)
+                            "endswith",    # Ends with
+                            "iendswith"    # Ends with (case-insensitive)
+                        }:
+                            if condition == "eq":
+                                if filter_value == "null":
+                                    conditions.append(column.is_(None))
+                                else:
+                                    conditions.append(column.__eq__(filter_value))
+                            elif condition == "ne":
+                                if filter_value == "null":
+                                    conditions.append(column.is_not(None))
+                                else:
+                                    conditions.append(column.__ne__(filter_value))
+                            elif condition == "lt":
+                                conditions.append(column.__lt__(filter_value))
+                            elif condition == "lte":
+                                conditions.append(column.__le__(filter_value))
+                            elif condition == "gt":
+                                conditions.append(column.__gt__(filter_value))
+                            elif condition == "gte":
+                                conditions.append(column.__ge__(filter_value))
+                            elif condition == "in":
+                                conditions.append(column.in_(filter_value))
+                            elif condition == "nin":
+                                conditions.append(column.notin_(filter_value))
+                            elif condition == "like":
+                                conditions.append(column.like(filter_value))
+                            elif condition == "not_like":
+                                conditions.append(column.not_like(filter_value))
+                            elif condition == "ilike":
+                                conditions.append(column.ilike(filter_value))
+                            elif condition == "not_ilike":
+                                conditions.append(column.not_ilike(filter_value))
+                            elif condition == "contains":
+                                conditions.append(column.contains(filter_value))
+                            elif condition == "ncontains":
+                                conditions.append(not_(column.contains(filter_value)))
+                            elif condition == "icontains":
+                                conditions.append(column.icontains(f"%{filter_value}%"))
+                            elif condition == "nicontains":
+                                conditions.append(not_(column.icontains(filter_value)))
+                            elif condition == "startswith":
+                                conditions.append(column.startswith(filter_value))
+                            elif condition == "istartswith":
+                                conditions.append(column.istartswith(filter_value))
+                            elif condition == "endswith":
+                                conditions.append(column.endswith(filter_value))
+                            elif condition == "iendswith":
+                                conditions.append(column.iendswith(filter_value))
 
-          #Get the index of the clause: ex. or[idx] ... and[idx]
-          idx = int(parts[i + 1][:-1])
+                # If the key refers to a relationship
+                elif key in relation_names:
+                    relationship = mapper.relationships[key]
+                    joins = query._setup_joins
+                    joined_tables = set()
 
-          #got index out of limit, so create empty dicts 
-          # (can happen due to the order of getting filters)
-          if idx >= len(target_dict[part]):
-            target_dict[part].extend([None] * (idx + 1 - len(target_dict[part])))
-            
-          target_dict = target_dict[part]
-          
+                    for join in joins:
+                        joined_tables.add(join[0])
 
-        elif part in ['and', 'or', 'not']:
-          if part not in target_dict:
-            target_dict[part] = []
-          
-          #Get the index of the clause: ex. or[idx] ... and[idx]
-          idx = int(parts[i + 1][:-1])
+                    # If relationship is not present in query already, join it.
+                    if key not in joined_tables:
+                        query = query.join(relationship.mapper.entity, getattr(mapper.entity, key))
 
-          #got index out of limit, so create empty dicts 
-          # (can happen due to the order of getting filters)
-          if idx >= len(target_dict[part]):
-            target_dict[part].extend([{}] * (idx + 1 - len(target_dict[part])))
-        
-          #set the (nested) dict as the one to be modified
-          target_dict = target_dict[part][idx]
-        
-        #is a prop or relationship
-        elif not part.isdigit(): #Relationship case
-          if part not in target_dict:
-            target_dict[part] = {}
-          #set the (nested) dict as the one to be modified
-          target_dict = target_dict[part]
+                    r_condition, query = self.filter_helper([value], relationship.mapper, and_, query)
+                    conditions.append(r_condition)
 
-  return filters
-  
-def parse_sort(items: List[Tuple[str, str]]) -> List[SortType]:
-  sorts = []
-  
-  for key, value in items:
-    if key.startswith("sorts"):
-      parts = key.split("[")
-      target_dict = {}
-      ##Remove first index: filters
-      parts.pop(0)
-      print(parts)
+                # If the key is a boolean operator
+                elif key in {"and", "or", "not"}:
+                    if key == 'and':
+                        condition, query = self.filter_helper(value, mapper, and_, query)
+                    elif key == 'or':
+                        condition, query = self.filter_helper(value, mapper, or_, query)
+                    elif key == 'not':
+                        condition, query = self.filter_helper(value, mapper, not_, query)
 
-      for i, part in enumerate(parts):
-        #remove ] char
-        part = part[:-1]
+                    conditions.append(condition)
 
-        if part.isdigit():
-          idx = int(part)
-          len_sort = len(sorts)
+                else:
+                    raise Exception(f"'{key}' is not a column property, nor a relationship name, nor a boolean function of (and, or, not).")
+        return (sqlalchemy_condition(*conditions), query)
 
-          if(idx >= len_sort):
-            sorts.extend([{}] * (idx + 1 - len_sort))
+    # Function to generate filters based on the context
+    def filter_by_ctx(self, filters: FilterType) -> Query:
+        mapper = self._entity_from_pre_ent_zero()
+        (conditions, query) = self.filter_helper([filters], mapper, and_, self)
 
-          target_dict = sorts[idx]
-        #is final property
-        elif i == len(parts) -1:
-          target_dict[part] = value
+        # Generate filter by conditions
+        return query.filter(conditions)
 
-        #is relationship name
-        elif i < len(parts) - 1:
-          field = part
+    # Helper function to handle sorting
+    def sort_helper(self, sort: SortType, mapper: Mapper, query: Query) -> Query:
+        column_names = [column.key for column in mapper.columns]
+        relation_names = [relationship.key for relationship in mapper.relationships]
 
-          if field not in target_dict:
-            target_dict[field] = {}
+        for key, value in sort.items():
+            # If the key refers to a column property
+            if key in column_names:
+                idx = column_names.index(key)
+                column = mapper.columns[idx]
 
-          #set the (nested) dict as the one to be modified
-          target_dict = target_dict[field]
+                if value.lower() == "desc":
+                    query = query.order_by(desc(column))
+                else:
+                    query = query.order_by(asc(column))
 
-  return sorts
-  
-def get_url_query_ctx() -> Dict[str, Union[FilterType, int, List[SortType]]]:
-  filters = parse_filters(request.args.items(multi=True))
-  offset  = request.args.get("offset", default=0, type=int)
-  limit   = request.args.get("limit", default=10, type=int)
-  sorts   = parse_sort(request.args.items(multi=True))
+            # If the key refers to a relationship
+            elif key in relation_names:
+                relationship = mapper.relationships[key]
+                joins = query._setup_joins
+                joined_tables = set()
 
-  ctx = {
-    "filters": filters,
-    "offset": offset,
-    "limit": limit,
-    "sorts": sorts
-  }
+                for join in joins:
+                    joined_tables.add(join[0])
 
-  return ctx
+                # If relationship is not present in query already, join it.
+                if key not in joined_tables:
+                    query = query.join(relationship.mapper.entity, getattr(mapper.entity, key))
+
+                query = self.sort_helper(value, relationship.mapper, query)
+
+        return query
+
+    # Function to generate sorting based on the context
+    def sort_by_ctx(self, sorts: List[SortType]) -> Query:
+        mapper = self._entity_from_pre_ent_zero()
+        query = self
+
+        for sort in sorts:
+            query = self.sort_helper(sort, mapper, self)
+
+        return query
