@@ -1,20 +1,41 @@
 from sqlalchemy import asc, desc, or_, and_, not_
 from sqlalchemy.orm import Query, Mapper
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Union
 
 from .constants import CONDITIONS
 
-# BaseQuery class to extend Query class and make use
-# of filtering, sorting features
+# BaseQuery class to extend Query class and make use of filtering, sorting features
 
 # Types
 FilterType = Dict[str, Union[bool, str, Dict]]
 SortType = Dict[str, Union[str, Dict]]
 BooleanExpression = Union[or_, and_, not_]
 
+
 class BaseQuery(Query):
-    # Helper function to handle filters
-    def filter_helper(self, filters: FilterType, mapper: Mapper, sqlalchemy_condition: BooleanExpression, query: Query) -> Query:
+    """
+    BaseQuery class extends the Query class and provides additional filtering and sorting features.
+    """
+
+    def filter_helper(
+        self,
+        filters: FilterType,
+        mapper: Mapper,
+        sqlalchemy_condition: BooleanExpression,
+        query: Query,
+    ) -> Query:
+        """
+        Helper function to handle filters.
+
+        Args:
+            filters: The filters to be applied.
+            mapper: The mapper for the current entity.
+            sqlalchemy_condition: The SQLAlchemy boolean expression (or_, and_, not_).
+            query: The current Query object.
+
+        Returns:
+            A Query object with the applied filters.
+        """
         conditions = []
         column_names = [column.key for column in mapper.columns]
         relation_names = [relationship.key for relationship in mapper.relationships]
@@ -31,14 +52,27 @@ class BaseQuery(Query):
                         for condition, filter_value in value.items():
                             if condition in CONDITIONS:
                                 column_condition = CONDITIONS[condition]
-                                if condition in {"eq", "ne"} and filter_value == "null":
-                                    condition_func = column.is_ if condition == "eq" else column.is_not
+                                if (
+                                    condition in {"eq", "ne"}
+                                    and filter_value == "null"
+                                ):
+                                    condition_func = (
+                                        column.is_
+                                        if condition == "eq"
+                                        else column.is_not
+                                    )
                                     conditions.append(condition_func(None))
                                 else:
-                                    condition_func = getattr(column, column_condition)
-                                    conditions.append(condition_func(filter_value))
+                                    condition_func = getattr(
+                                        column, column_condition
+                                    )
+                                    conditions.append(
+                                        condition_func(filter_value)
+                                    )
                             else:
-                                raise Exception(f"'{condition}' is not a supported condition.")
+                                raise Exception(
+                                    f"'{condition}' is not a supported condition."
+                                )
 
                     # If the key refers to a relationship
                     elif key in relation_names:
@@ -51,36 +85,57 @@ class BaseQuery(Query):
 
                         # If relationship is not present in query already, join it.
                         if key not in joined_tables:
-                            query = query.join(relationship.mapper.entity, getattr(mapper.entity, key))
+                            query = query.join(
+                                relationship.mapper.entity,
+                                getattr(mapper.entity, key),
+                            )
 
-                        r_condition, query = self.filter_helper([value], relationship.mapper, and_, query)
+                        r_condition, query = self.filter_helper(
+                            [value], relationship.mapper, and_, query
+                        )
                         conditions.append(r_condition)
 
                     # If the key is a boolean operator
                     elif key in {"and", "or", "not"}:
-                        if key == 'and':
-                            condition, query = self.filter_helper(value, mapper, and_, query)
-                        elif key == 'or':
-                            condition, query = self.filter_helper(value, mapper, or_, query)
-                        elif key == 'not':
-                            condition, query = self.filter_helper(value, mapper, not_, query)
+                        if key == "and":
+                            condition, query = self.filter_helper(
+                                value, mapper, and_, query
+                            )
+                        elif key == "or":
+                            condition, query = self.filter_helper(
+                                value, mapper, or_, query
+                            )
+                        elif key == "not":
+                            condition, query = self.filter_helper(
+                                value, mapper, not_, query
+                            )
 
                         conditions.append(condition)
 
                     else:
-                        raise Exception(f"'{key}' is not a column property, nor a relationship name, nor a boolean function of (and, or, not).")
+                        raise Exception(
+                            f"'{key}' is not a column property, nor a relationship name, nor a boolean function of (and, or, not)."
+                        )
 
                 except Exception as e:
                     # Handle the exception here
                     print(f"Exception occurred: {str(e)}")
 
-        return (sqlalchemy_condition(*conditions), query)
+        return sqlalchemy_condition(*conditions), query
 
-    # Function to generate filters based on the context
     def filter_by_ctx(self, filters: FilterType) -> Query:
+        """
+        Function to generate filters based on the context.
+
+        Args:
+            filters: The filters to be applied.
+
+        Returns:
+            A Query object with the applied filters.
+        """
         try:
             mapper = self._entity_from_pre_ent_zero()
-            (conditions, query) = self.filter_helper([filters], mapper, and_, self)
+            conditions, query = self.filter_helper([filters], mapper, and_, self)
 
             # Generate filter by conditions
             return query.filter(conditions)
@@ -89,8 +144,20 @@ class BaseQuery(Query):
             # Handle the exception here
             print(f"Exception occurred: {str(e)}")
 
-    # Helper function to handle sorting
-    def sort_helper(self, sort: SortType, mapper: Mapper, query: Query) -> Query:
+    def sort_helper(
+        self, sort: SortType, mapper: Mapper, query: Query
+    ) -> Query:
+        """
+        Helper function to handle sorting.
+
+        Args:
+            sort: The sorting instructions.
+            mapper: The mapper for the current entity.
+            query: The current Query object.
+
+        Returns:
+            A Query object with the applied sorting.
+        """
         column_names = [column.key for column in mapper.columns]
         relation_names = [relationship.key for relationship in mapper.relationships]
 
@@ -117,7 +184,10 @@ class BaseQuery(Query):
 
                     # If relationship is not present in query already, join it.
                     if key not in joined_tables:
-                        query = query.join(relationship.mapper.entity, getattr(mapper.entity, key))
+                        query = query.join(
+                            relationship.mapper.entity,
+                            getattr(mapper.entity, key),
+                        )
 
                     query = self.sort_helper(value, relationship.mapper, query)
 
@@ -127,8 +197,16 @@ class BaseQuery(Query):
 
         return query
 
-    # Function to generate sorting based on the context
     def sort_by_ctx(self, sorts: List[SortType]) -> Query:
+        """
+        Function to generate sorting based on the context.
+
+        Args:
+            sorts: The sorting instructions.
+
+        Returns:
+            A Query object with the applied sorting.
+        """
         try:
             mapper = self._entity_from_pre_ent_zero()
             query = self
