@@ -50,31 +50,18 @@ class BaseQuery(Query):
                         for condition, filter_value in value.items():
                             if condition in CONDITIONS:
                                 column_condition = CONDITIONS[condition]
+                                condition_func = getattr(
+                                    column, column_condition
+                                )
 
-                                if (
-                                    condition in {"eq", "ne"}
-                                    and filter_value == "null"
-                                ):
-                                    condition_func = (
-                                        column.is_
-                                        if condition == "eq"
-                                        else column.is_not
-                                    )
-                                    conditions.append(condition_func(None))
-                                elif condition in {"ncontains", "nicontains"}:
-                                    #No native ncontains, nor nicontains attr.
-                                    #Use of contains, and icontains attrs. to 
-                                    #negate them 
-                                    condition_func = getattr(
-                                        column, column_condition
-                                    )
+                                if condition in {"ncontains", "nicontains"}:
+                                    # No native ncontains, nor nicontains attr.
+                                    # Use of a not and the contains, and 
+                                    # icontains attrs.
                                     conditions.append(
                                         not_(condition_func(filter_value))
                                     )
                                 else:
-                                    condition_func = getattr(
-                                        column, column_condition
-                                    )
                                     conditions.append(
                                         condition_func(filter_value)
                                     )

@@ -92,6 +92,22 @@ def test_qs_parser_boolean_value_filtering(client):
     "sorts": []
   }
 
+#Test null 
+def test_qs_parser_null_value_filtering(client):
+  response = client.get("/endpoint?filters[baz][is]=null&filters[foo][is_not]=null")
+  assert response.status_code == 200
+
+  data = response.json
+  assert data["ctx"] == {
+    "filters": {
+      "baz": {"is": None},
+      "foo": {"is_not": None}
+    },
+    "offset": 0,
+    "limit": 10,
+    "sorts": []
+  }
+
 #Boolean expressions filtering
 def test_qs_parser_boolean_expressions_filter(client):
   response = client.get("/endpoint?" +
