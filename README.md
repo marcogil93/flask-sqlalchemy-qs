@@ -35,6 +35,8 @@ The following operators are available:
 | ----------- | ---------------------------------- |
 | eq          | Equal                              |
 | ne          | Not equal                          |
+| is          | Is                                 |
+| is_not      | Is not                             |
 | lt          | Less than                          |
 | lte         | Less than or equal to              |
 | gt          | Greater than                       |
