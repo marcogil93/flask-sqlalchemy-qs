@@ -8,6 +8,7 @@ flask_sqlalchemy_qs.egg-info/dependency_links.txt
 flask_sqlalchemy_qs.egg-info/requires.txt
 flask_sqlalchemy_qs.egg-info/top_level.txt
 flask_sqlalchemy_qs/qs_parser/main.py
+flask_sqlalchemy_qs/query/constants.py
 flask_sqlalchemy_qs/query/model.py
 tests/test_integration.py
 tests/test_qs_parser.py
