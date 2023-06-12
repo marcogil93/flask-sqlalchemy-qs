@@ -95,8 +95,6 @@ class BaseQuery(Query):
                 conditions.append(column.endswith(filter_value))
               elif condition == "iendswith":
                 conditions.append(column.iendswith(filter_value))
-            else:
-              raise Exception(f"Condition '{condition}' not recognized.")
 
         # If the key refers to a relationship
         elif key in relation_names:
@@ -131,7 +129,6 @@ class BaseQuery(Query):
     
   # Function to generate filters based on the context
   def filter_by_ctx(self, filters:FilterType) -> Query:
-    #Get the mapper of main entity
     mapper = self._entity_from_pre_ent_zero()
     (conditions, query) = self.filter_helper([filters], mapper, and_, self)
 
