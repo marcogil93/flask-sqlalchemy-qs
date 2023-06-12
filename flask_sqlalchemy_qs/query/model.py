@@ -5,7 +5,7 @@ sorting features
 
 from sqlalchemy import asc, desc, or_, and_, not_
 from sqlalchemy.orm import Query, Mapper
-from typing import Dict, List, Union
+from typing import List
 
 from .constants import CONDITIONS, FilterType, SortType, BooleanExpression
 
@@ -50,6 +50,7 @@ class BaseQuery(Query):
                         for condition, filter_value in value.items():
                             if condition in CONDITIONS:
                                 column_condition = CONDITIONS[condition]
+
                                 if (
                                     condition in {"eq", "ne"}
                                     and filter_value == "null"
@@ -60,6 +61,16 @@ class BaseQuery(Query):
                                         else column.is_not
                                     )
                                     conditions.append(condition_func(None))
+                                elif condition in {"ncontains", "nicontains"}:
+                                    #No native ncontains, nor nicontains attr.
+                                    #Use of contains, and icontains attrs. to 
+                                    #negate them 
+                                    condition_func = getattr(
+                                        column, column_condition
+                                    )
+                                    conditions.append(
+                                        not_(condition_func(filter_value))
+                                    )
                                 else:
                                     condition_func = getattr(
                                         column, column_condition
