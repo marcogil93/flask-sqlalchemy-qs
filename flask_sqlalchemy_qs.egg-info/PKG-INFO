@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: flask-sqlalchemy-qs
-Version: 1.0.3
-Summary: Generate and manipulatew SQLAlchemy filters and sorts from query strings in the URL
+Version: 1.0.7
+Summary: Generate and manipulate SQLAlchemy filters and sorts from query strings in the URL
 Home-page: https://github.com/marcogil93/flask-sqlalchemy-qs
 Author: Marco Gil
 Author-email: marcogil93@gmail.com
@@ -52,6 +52,8 @@ The following operators are available:
 | ----------- | ---------------------------------- |
 | eq          | Equal                              |
 | ne          | Not equal                          |
+| is          | Is                                 |
+| is_not      | Is not                             |
 | lt          | Less than                          |
 | lte         | Less than or equal to              |
 | gt          | Greater than                       |
@@ -183,7 +185,7 @@ def get_all_users():
 ```
 
 ## Version
-1.0.3
+1.0.7
 
 ## Requirements 
 SQLALCHEMYSQLAlchemy~=2.0

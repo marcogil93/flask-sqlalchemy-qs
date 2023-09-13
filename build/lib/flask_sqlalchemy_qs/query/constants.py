@@ -10,6 +10,8 @@ SortType = Dict[str, Union[str, Dict]]
 BooleanExpression = Union[or_, and_, not_]
 
 CONDITIONS = {
+    "is": "is_",
+    "is_not": "is_not",
     "eq": "__eq__",
     "ne": "__ne__",
     "lt": "__lt__",
@@ -31,3 +33,5 @@ CONDITIONS = {
     "endswith": "endswith",
     "iendswith": "iendswith"
 }
+
+CASTS = {int}

@@ -7,8 +7,7 @@ from sqlalchemy import asc, desc, or_, and_, not_
 from sqlalchemy.orm import Query, Mapper
 from typing import List
 
-from .constants import CONDITIONS, FilterType, SortType, BooleanExpression
-
+from .constants import CONDITIONS, CASTS, FilterType, SortType, BooleanExpression
 
 class BaseQuery(Query):
     """
@@ -53,17 +52,23 @@ class BaseQuery(Query):
                                 condition_func = getattr(
                                     column, column_condition
                                 )
+                                
+                                #Cast value to its necessary type if needed
+                                if type(filter_value) == str and column.type.python_type in CASTS:
+                                    value = column.type.python_type(filter_value)
+                                else: 
+                                    value = filter_value
 
                                 if condition in {"ncontains", "nicontains"}:
                                     # No native ncontains, nor nicontains attr.
                                     # Use of a not and the contains, and 
                                     # icontains attrs.
                                     conditions.append(
-                                        not_(condition_func(filter_value))
+                                        not_(condition_func(value))
                                     )
                                 else:
                                     conditions.append(
-                                        condition_func(filter_value)
+                                        condition_func(value)
                                     )
                             else:
                                 raise Exception(

@@ -25,6 +25,8 @@ def parse_filters(items: List[Tuple[str, str]]) -> FilterType:
             target_dict[part] = True
           elif value == 'false':
             target_dict[part] = False
+          elif value == 'null':
+            target_dict[part] = None
           else:
             if part.isdigit(): #Case in, nin
               target_dict[int(part)] = value

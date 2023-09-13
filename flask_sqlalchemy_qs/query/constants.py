@@ -33,3 +33,5 @@ CONDITIONS = {
     "endswith": "endswith",
     "iendswith": "iendswith"
 }
+
+CASTS = {int}
