@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: flask-sqlalchemy-qs
-Version: 1.0.7
+Version: 1.0.8
 Summary: Generate and manipulate SQLAlchemy filters and sorts from query strings in the URL
 Home-page: https://github.com/marcogil93/flask-sqlalchemy-qs
 Author: Marco Gil
@@ -185,7 +185,7 @@ def get_all_users():
 ```
 
 ## Version
-1.0.7
+1.0.8
 
 ## Requirements 
 SQLALCHEMYSQLAlchemy~=2.0

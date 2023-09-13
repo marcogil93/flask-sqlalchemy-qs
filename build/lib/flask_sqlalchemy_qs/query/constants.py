@@ -34,4 +34,4 @@ CONDITIONS = {
     "iendswith": "iendswith"
 }
 
-CASTS = {int}
+CASTS = {int, float}
