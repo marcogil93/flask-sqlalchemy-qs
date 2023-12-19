@@ -3,11 +3,11 @@ BaseQuery class to extend Query class and make use of filtering and
 sorting features
 """
 
-from sqlalchemy import asc, desc, or_, and_, not_
+from sqlalchemy import asc, desc, or_, and_, not_, text, bindparam
 from sqlalchemy.orm import Query, Mapper
 from typing import List
 
-from .constants import CONDITIONS, CASTS, FilterType, SortType, BooleanExpression
+from .constants import CONDITIONS, CASTS, FilterType, SortType, BooleanExpression, JSON_CONDITIONS, JSON_CASTS
 
 class BaseQuery(Query):
     """
@@ -40,40 +40,73 @@ class BaseQuery(Query):
         for filter in filters:
             for key, value in filter.items():
                 try:
+                    is_json = False
+
+                    #If the the key is a json field
+                    if '.' in key:
+                        is_json = True
+                        (key, json_body) = key.split(".", 1)
+
                     # If the key refers to a column property
                     if key in column_names:
                         idx = column_names.index(key)
                         column = mapper.columns[idx]
 
-                        # Set all the property filters
-                        for condition, filter_value in value.items():
-                            if condition in CONDITIONS:
-                                column_condition = CONDITIONS[condition]
-                                condition_func = getattr(
-                                    column, column_condition
-                                )
-                                
-                                #Cast value to its necessary type if needed
-                                if type(filter_value) == str and column.type.python_type in CASTS:
-                                    value = column.type.python_type(filter_value)
-                                else: 
-                                    value = filter_value
+                        if is_json:
+                            # Agregar la condición a las condiciones existentes
+                            for condition, filter_value in value.items():
+                                if condition in JSON_CONDITIONS:
+                                    # Construir la condición JSON como una cadena de texto
+                                    if type(filter_value) in JSON_CASTS:
+                                        condition_sql = f"CAST({column.key} ->> :json_body AS {JSON_CASTS[type(filter_value)]}) {JSON_CONDITIONS[condition]} :filter_value"
+                                    else:
+                                        condition_sql = f"{column.key} ->> :json_body {JSON_CONDITIONS[condition]} :filter_value"
 
-                                if condition in {"ncontains", "nicontains"}:
-                                    # No native ncontains, nor nicontains attr.
-                                    # Use of a not and the contains, and 
-                                    # icontains attrs.
-                                    conditions.append(
-                                        not_(condition_func(value))
-                                    )
+                                    # Agregar los parámetros con nombre para evitar inyección SQL
+                                    conditions.append(text(condition_sql).bindparams(
+                                        bindparam('json_body', json_body),
+                                        bindparam('filter_value', filter_value)
+                                    ))
                                 else:
-                                    conditions.append(
-                                        condition_func(value)
+                                    raise Exception(
+                                        f"'{condition}' is not a supported condition."
                                     )
-                            else:
-                                raise Exception(
-                                    f"'{condition}' is not a supported condition."
-                                )
+                        else: 
+                            # Set all the property filters
+                            for condition, filter_value in value.items():
+                                if condition in CONDITIONS:
+                                    if is_json:
+                                        column = column[json_body]
+                                        # print(json_body)
+                                        # print(column)
+                                        # column = column.astext.cast(type(filter_value))
+
+                                    column_condition = CONDITIONS[condition]
+                                    condition_func = getattr(
+                                        column, column_condition
+                                    )
+                                    
+                                    #Cast value to its necessary type if needed
+                                    if type(filter_value) == str and column.type.python_type in CASTS:
+                                        value = column.type.python_type(filter_value)
+                                    else: 
+                                        value = filter_value
+
+                                    if condition in {"ncontains", "nicontains"}:
+                                        # No native ncontains, nor nicontains attr.
+                                        # Use of a not and the contains, and 
+                                        # icontains attrs.
+                                        conditions.append(
+                                            not_(condition_func(value))
+                                        )
+                                    else:
+                                        conditions.append(
+                                            condition_func(value)
+                                        )
+                                else:
+                                    raise Exception(
+                                        f"'{condition}' is not a supported condition."
+                                    )
 
                     # If the key refers to a relationship
                     elif key in relation_names:

@@ -14,10 +14,11 @@ class Base(db.Model):
 class User(Base):
   __tablename__ = "users"
 
-  id       = db.Column(db.Integer, primary_key=True)
-  username = db.Column(db.String(50), unique=True)
-  person   = db.relationship("Person", uselist=False, back_populates="user")
-  emails   = db.relationship("Email", back_populates="user")
+  id        = db.Column(db.Integer, primary_key=True)
+  username  = db.Column(db.String(50), unique=True)
+  person    = db.relationship("Person", uselist=False, back_populates="user")
+  emails    = db.relationship("Email", back_populates="user")
+  json_data = db.Column(db.JSON, nullable=True)
 
   def __repr__(self):
     return f'<User id={self.id!r}, username={self.username!r}>'

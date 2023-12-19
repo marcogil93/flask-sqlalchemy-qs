@@ -34,4 +34,29 @@ CONDITIONS = {
     "iendswith": "iendswith"
 }
 
+JSON_CONDITIONS = {
+    "eq": "=",
+    "ne": "!=",
+    "lt": "<",
+    "lte": "<=",
+    "gt": ">",
+    "gte": ">=",
+    "contains": "contains",
+    "ncontains": "not contains",
+    "icontains": "icontains",
+    "nicontains": "not icontains",
+    "like": "like",
+    "ilike": "ilike",
+    "not_like": "not like",
+    "not_ilike": "not ilike",
+    "startswith": "startswith",
+    "istartswith": "istartswith",
+    "endswith": "endswith",
+    "iendswith": "iendswith"
+}
+
 CASTS = {int, float}
+JSON_CASTS = {
+    int: 'integer',
+    float: 'float'
+}

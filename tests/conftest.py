@@ -1,4 +1,5 @@
 import pytest
+import json
 from flask import jsonify
 from flask_sqlalchemy_qs import get_url_query_ctx
 from tests import app, db, User, Person, Email
@@ -47,7 +48,7 @@ def sqlalchemy():
 
 @pytest.fixture(scope='session')
 def setup_entities(sqlalchemy):
-  user   = User(username="alex_username@example.com")
+  user   = User(username="alex_username@example.com", json_data={'foo': 'bar', 'num': 10, 'a': {'b': 10}} )
   person = Person(name="Alex", age=20)
   user.person = person
   user.emails.append(Email(address="alex_email_1@example.com"))

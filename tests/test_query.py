@@ -306,3 +306,42 @@ def test_sort(setup_entities):
     age = user.person.age
 
   assert age == 20
+
+def test_json_string(setup_entities):
+  filters = {
+    "json_data.foo": {"eq": "bar"}
+  }
+
+  users = User.query.filter_by_ctx(filters=filters).all()
+  assert len(users) == 1
+  assert users[0].username == "alex_username@example.com"
+
+def test_json_int(setup_entities):
+  filters = {
+    "json_data.num": {"gt": 8}
+  }
+
+  users = User.query.filter_by_ctx(filters=filters).all()
+
+  assert len(users) == 1
+  assert users[0].username == "alex_username@example.com"
+
+def test_json_int(setup_entities):
+  filters = {
+    "json_data.num": {"gt": 8}
+  }
+
+  users = User.query.filter_by_ctx(filters=filters).all()
+
+  assert len(users) == 1
+  assert users[0].username == "alex_username@example.com"
+
+def test_json_nested(setup_entities):
+  filters = {
+    "json_data.a.b": {"eq": 10}
+  }
+
+  users = User.query.filter_by_ctx(filters=filters).all()
+
+  assert len(users) == 1
+  assert users[0].username == "alex_username@example.com"

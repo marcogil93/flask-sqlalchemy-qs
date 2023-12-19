@@ -85,6 +85,10 @@ The following operators are available:
 
 `/users?filters[or][0][username][contains]=awesome.com&filters[or][1][not][0][and][0][person][age][gte]=20&filters[or][1][not][0][and][1][person][age][lte]=30`
 
+7) JSON support followed by dot notation
+
+`/users?filters[json_column.foo][eq]=bar`
+
 <!-- blank line -->  
 
 <!-- blank line -->  
@@ -168,7 +172,7 @@ def get_all_users():
 ```
 
 ## Version
-1.0.8
+1.1.3
 
 ## Requirements 
 SQLALCHEMYSQLAlchemy~=2.0
