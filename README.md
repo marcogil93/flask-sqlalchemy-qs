@@ -172,7 +172,7 @@ def get_all_users():
 ```
 
 ## Version
-1.1.3
+1.1.4
 
 ## Requirements 
 SQLALCHEMYSQLAlchemy~=2.0

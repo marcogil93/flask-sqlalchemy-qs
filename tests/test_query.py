@@ -338,10 +338,18 @@ def test_json_int(setup_entities):
 
 def test_json_nested(setup_entities):
   filters = {
-    "json_data.a.b": {"eq": 10}
+    "json_data.a.b": {"eq": 10},
+    "json_data.num": {"gt": 8}
   }
 
-  users = User.query.filter_by_ctx(filters=filters).all()
+  query = User.query.filter_by_ctx(filters=filters)
+  print(query.statement)
+  print(query.statement.compile().params)
+  
+  users = query.all()
+
+  for user in users:
+    print(user.as_dict())
 
   assert len(users) == 1
   assert users[0].username == "alex_username@example.com"

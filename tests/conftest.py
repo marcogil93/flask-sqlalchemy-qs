@@ -60,7 +60,7 @@ def setup_entities(sqlalchemy):
   user2.emails.append(Email(address="marco_email_1@example.com"))
   user2.emails.append(Email(address="MARCO_email_2@example.com"))
 
-  user3 = User(username="ivan_username@example.com")
+  user3 = User(username="ivan_username@example.com", json_data={'foo': 'bar2', 'num': 1, 'a': {'b': 10}})
   person3 = Person(name="Ivan", age=20)
   user3.person = person3
   user3.emails.append(Email(address="ivan_email_1@example.com"))

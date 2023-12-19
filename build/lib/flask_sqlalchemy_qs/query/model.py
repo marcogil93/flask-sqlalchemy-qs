@@ -36,6 +36,7 @@ class BaseQuery(Query):
         conditions = []
         column_names = [column.key for column in mapper.columns]
         relation_names = [relationship.key for relationship in mapper.relationships]
+        json_params_counter = 1
 
         for filter in filters:
             for key, value in filter.items():
@@ -58,15 +59,16 @@ class BaseQuery(Query):
                                 if condition in JSON_CONDITIONS:
                                     # Construir la condición JSON como una cadena de texto
                                     if type(filter_value) in JSON_CASTS:
-                                        condition_sql = f"CAST({column.key} ->> :json_body AS {JSON_CASTS[type(filter_value)]}) {JSON_CONDITIONS[condition]} :filter_value"
+                                        condition_sql = f"CAST({column.key} ->> :json_body_{json_params_counter} AS {JSON_CASTS[type(filter_value)]}) {JSON_CONDITIONS[condition]} :filter_value_{json_params_counter}"
                                     else:
-                                        condition_sql = f"{column.key} ->> :json_body {JSON_CONDITIONS[condition]} :filter_value"
+                                        condition_sql = f"{column.key} ->> :json_body_{json_params_counter} {JSON_CONDITIONS[condition]} :filter_value_{json_params_counter}"
 
                                     # Agregar los parámetros con nombre para evitar inyección SQL
                                     conditions.append(text(condition_sql).bindparams(
-                                        bindparam('json_body', json_body),
-                                        bindparam('filter_value', filter_value)
+                                        bindparam(f'json_body_{json_params_counter}', json_body),
+                                        bindparam(f'filter_value_{json_params_counter}', filter_value)
                                     ))
+                                    json_params_counter += 1
                                 else:
                                     raise Exception(
                                         f"'{condition}' is not a supported condition."
@@ -75,12 +77,6 @@ class BaseQuery(Query):
                             # Set all the property filters
                             for condition, filter_value in value.items():
                                 if condition in CONDITIONS:
-                                    if is_json:
-                                        column = column[json_body]
-                                        # print(json_body)
-                                        # print(column)
-                                        # column = column.astext.cast(type(filter_value))
-
                                     column_condition = CONDITIONS[condition]
                                     condition_func = getattr(
                                         column, column_condition
